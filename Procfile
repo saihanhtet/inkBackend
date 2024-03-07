@@ -1,1 +1,0 @@
-web: gunicorn 'inkBackend.wsgi'
