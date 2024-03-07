@@ -93,6 +93,8 @@ class UserLogin(APIView):
     def post(self, request):
         """ User Login post method"""
         data = request.data
+        assert validate_email(data)
+        assert validate_password(data)
         serializer = UserLoginSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             user = serializer.check_user(data)
@@ -106,7 +108,7 @@ class UserLogin(APIView):
                 value=tokens['refresh'],
                 httponly=True,
                 secure=True,  # Adjust based on your HTTPS setup
-                samesite='None',  # Adjust based on your cross-origin requirements
+                samesite='Lax',  # Adjust based on your cross-origin requirements
                 domain='127.0.0.1',  # Adjust based on your domain or use IP address
                 path='/',
             )
@@ -115,7 +117,7 @@ class UserLogin(APIView):
                 value=tokens['access'],
                 httponly=True,
                 secure=True,  # Adjust based on your HTTPS setup
-                samesite='None',  # Adjust based on your cross-origin requirements
+                samesite='Lax',  # Adjust based on your cross-origin requirements
                 domain='127.0.0.1',  # Adjust based on your domain or use IP address
                 path='/',
             )
