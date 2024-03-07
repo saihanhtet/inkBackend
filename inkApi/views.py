@@ -106,18 +106,18 @@ class UserLogin(APIView):
             response.set_cookie(
                 key='refresh_token',
                 value=tokens['refresh'],
-                httponly=True,
+                httponly=False,
                 secure=True,  # Adjust based on your HTTPS setup
-                samesite='Lax',  # Adjust based on your cross-origin requirements
+                samesite='None',  # Adjust based on your cross-origin requirements
                 domain='127.0.0.1',  # Adjust based on your domain or use IP address
                 path='/',
             )
             response.set_cookie(
                 key='access_token',
                 value=tokens['access'],
-                httponly=True,
+                httponly=False,
                 secure=True,  # Adjust based on your HTTPS setup
-                samesite='Lax',  # Adjust based on your cross-origin requirements
+                samesite='None',  # Adjust based on your cross-origin requirements
                 domain='127.0.0.1',  # Adjust based on your domain or use IP address
                 path='/',
             )
