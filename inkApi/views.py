@@ -93,8 +93,6 @@ class UserLogin(APIView):
     def post(self, request):
         """ User Login post method"""
         data = request.data
-        assert validate_email(data)
-        assert validate_password(data)
         serializer = UserLoginSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             user = serializer.check_user(data)
@@ -229,7 +227,7 @@ class DashboardAnalysis(APIView):
         users = UserModel.objects.all()
         courses = Course.objects.all()
         cohorts = Cohort.objects.all()
-        # current_user = UserSerializer(request.user).data 
+        # current_user = UserSerializer(request.user).data
 
         cohorts_with_student_count = Cohort.objects.annotate(
             student_count=Count('students')
