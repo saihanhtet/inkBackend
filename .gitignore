@@ -1,0 +1,12 @@
+# Ignore .env file
+.env
+
+# Ignore db.sqlite3 file
+db.sqlite3
+
+# Ignore Python cache directories
+__pycache__/
+*.pyc
+
+env/
+.vercel
