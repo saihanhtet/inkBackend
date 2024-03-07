@@ -38,6 +38,7 @@ def is_strong_password(password):
 
 
 def validate_email(data):
+    print(data)
     email = data['email'].strip()
     if not email:
         raise ValidationError('an email is needed')
