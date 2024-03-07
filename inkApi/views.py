@@ -110,7 +110,7 @@ class UserLogin(APIView):
                 secure=True,  # Adjust based on your HTTPS setup
                 samesite='None',  # Adjust based on your cross-origin requirements
                 # Adjust based on your domain or use IP address
-                domain='https://ink-backend.vercel.app/',
+                domain='.ink-backend.vercel.app',
                 path='/',
             )
             response.set_cookie(
@@ -120,7 +120,7 @@ class UserLogin(APIView):
                 secure=True,  # Adjust based on your HTTPS setup
                 samesite='None',  # Adjust based on your cross-origin requirements
                 # Adjust based on your domain or use IP address
-                domain='https://ink-backend.vercel.app/',
+                domain='.ink-backend.vercel.app',
                 path='/',
             )
             return response
