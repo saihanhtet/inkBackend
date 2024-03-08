@@ -13,6 +13,7 @@ class School(models.Model):
     school_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
+    objects = models.Manager()
 
     def __str__(self):
         return self.name
@@ -24,6 +25,7 @@ class Course(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    objects = models.Manager()
 
     def __str__(self) -> str:
         return self.course_name
@@ -40,6 +42,7 @@ class Subject(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
 
     def __str__(self) -> str:
         return self.subject_name
@@ -62,6 +65,7 @@ class Chapter(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
 
     def __str__(self) -> str:
         return self.chapter_name
@@ -82,6 +86,7 @@ class Cohort(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    objects = models.Manager()
 
     def __str__(self) -> str:
         return f"{self.cohort_name} - {self.course.course_name}"
@@ -99,6 +104,7 @@ class SecretKey(models.Model):
     key = models.CharField(max_length=36, unique=True, null=True, blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     is_used = models.BooleanField(default=False)
+    objects = models.Manager()
 
     def __str__(self):
         return f"{self.key} - {self.role}"
@@ -191,6 +197,7 @@ class AdminProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     school = models.ForeignKey(
         School, on_delete=models.CASCADE, null=True, blank=True, related_name='admin_profiles')
+    objects = models.Manager()
 
     def __str__(self):
         return f"{self.user.username}'s admin profile"
@@ -200,6 +207,7 @@ class TeacherProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     school = models.ForeignKey(
         School, on_delete=models.CASCADE, related_name='teacher_profiles', null=True, blank=True)
+    objects = models.Manager()
 
     def __str__(self):
         return f"{self.user.username}'s teacher profile"
@@ -236,6 +244,7 @@ class StudentProfile(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
 
     def __str__(self):
         return f"{self.user.username}'s student profile"
