@@ -28,3 +28,4 @@ sqlparse==0.4.4
 typing_extensions==4.10.0
 tzdata==2023.4
 Werkzeug==3.0.1
+whitenoise==6.6.0
