@@ -1,1 +1,1 @@
-web: inkBackend.wsgi
+web: gunicorn 'inkBackend.wsgi'
