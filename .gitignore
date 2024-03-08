@@ -10,6 +10,7 @@ __pycache__/
 
 
 inkBackend/settings.py
+inkApi/migrations
 
 env/
 .vercel
