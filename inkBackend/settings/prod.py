@@ -164,13 +164,13 @@ STATIC_URL = '/static/'
 
 # Use a list for STATICFILES_DIRS
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR.parent, 'static'),
 ]
 # Specify the location for collected static files
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR.parent, 'staticfiles')
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR.parent, 'media')
 
 
 # Default primary key field type
