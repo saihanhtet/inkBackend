@@ -9,7 +9,5 @@ __pycache__/
 *.pyc
 
 
-inkBackend/settings.py
-
 env/
 .vercel
