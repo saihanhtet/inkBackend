@@ -8,6 +8,7 @@ db.sqlite3
 __pycache__/
 *.pyc
 
+inkApi/migrations
 
 env/
 .vercel
