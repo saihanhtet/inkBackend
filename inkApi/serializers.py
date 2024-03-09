@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 
-from .models import Course, School, SecretKey, AdminProfile, Subject, TeacherProfile, StudentProfile
+from .models import Attendance, AttendanceReport, Course, FeedBackStudent, FeedBackTeacher, LeaveReportStudent, LeaveReportTeacher, NotificationStudent, NotificationTeacher, School, SecretKey, AdminProfile, Subject, TeacherProfile, StudentProfile
 
 User = get_user_model()
 
@@ -180,3 +180,75 @@ class DashboardAnalysisSerializer(serializers.Serializer):
     course_data = CourseSerializer(many=True)
     subject_data = SubjectSerializer(many=True)
     # current_user = UserSerializer()
+
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attendance
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        return super().create(validated_data)
+
+
+class AttendanceReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AttendanceReport
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        return super().create(validated_data)
+
+
+class LeaveReportStudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LeaveReportStudent
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        return super().create(validated_data)
+
+
+class LeaveReportTeacherSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LeaveReportTeacher
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        return super().create(validated_data)
+
+
+class FeedBackStudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FeedBackStudent
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        return super().create(validated_data)
+
+
+class FeedBackTeacherSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FeedBackTeacher
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        return super().create(validated_data)
+
+
+class NotificationStudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationStudent
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        return super().create(validated_data)
+
+
+class NotificationTeacherSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationTeacher
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        return super().create(validated_data)
