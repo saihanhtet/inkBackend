@@ -3,10 +3,10 @@ from django.db.models import Count
 from django.contrib.auth import get_user_model, login, logout
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import CourseSerializer, DashboardAnalysisSerializer, SecretKeySerializer, SubjectSerializer, UserRegisterSerializer, UserLoginSerializer, UserDetailSerializer, UserSerializer
+from .serializers import CourseSerializer, DashboardAnalysisSerializer, SchoolSerializer, SecretKeySerializer, SubjectSerializer, UserRegisterSerializer, UserLoginSerializer, UserDetailSerializer, UserSerializer
 from rest_framework import permissions, status
 from .validations import custom_validation, validate_email, validate_password
-from .models import Cohort, SecretKey, Course, StudentProfile, Subject
+from .models import Cohort, School, SecretKey, Course, StudentProfile, Subject
 from rest_framework_simplejwt.authentication import JWTAuthentication as BaseJWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -60,7 +60,7 @@ class check_token(APIView):
 
     def get(self, request):
         """Check the token from request"""
-        return Response({'message': 'token alive'}, status=status.HTTP_200_OK)
+        return Response({'data': {}, 'message': 'token alive'}, status=status.HTTP_200_OK)
 
 
 class IsSuperuser(permissions.BasePermission):
@@ -80,7 +80,7 @@ class UserRegister(APIView):
             user = serializer.create(clean_data)
             serializer = UserDetailSerializer(user)
             if user:
-                return Response({'user': serializer.data, 'message': "register successful"}, status=status.HTTP_201_CREATED)
+                return Response({'data': serializer.data, 'message': "register successful"}, status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -101,7 +101,7 @@ class UserLogin(APIView):
             login(request, user)
             tokens = generate_tokens(user)
             serializer = UserDetailSerializer(user)
-            response = Response({'user': serializer.data,
+            response = Response({'data': serializer.data,
                                 'message': "login successful"}, status=status.HTTP_200_OK)
             response.set_cookie(
                 key='refresh_token',
@@ -110,7 +110,7 @@ class UserLogin(APIView):
                 secure=True,  # Adjust based on your HTTPS setup
                 samesite='None',  # Adjust based on your cross-origin requirements
                 # Adjust based on your domain or use IP address
-                domain='.ink-backend.vercel.app',
+                domain='127.0.0.1',
                 path='/',
             )
             response.set_cookie(
@@ -120,7 +120,7 @@ class UserLogin(APIView):
                 secure=True,  # Adjust based on your HTTPS setup
                 samesite='None',  # Adjust based on your cross-origin requirements
                 # Adjust based on your domain or use IP address
-                domain='.ink-backend.vercel.app',
+                domain='127.0.0.1',
                 path='/',
             )
             return response
@@ -133,7 +133,7 @@ class UserLogout(APIView):
     def post(self, request):
         """ User Logout method"""
         logout(request)
-        return Response(status=status.HTTP_200_OK)
+        return Response({'data': {}, 'message': 'Logout successful'}, status=status.HTTP_200_OK)
 
 
 class UserView(APIView):
@@ -147,7 +147,7 @@ class UserView(APIView):
         """ User Detail get method """
         print('User:', request.user)
         serializer = UserDetailSerializer(request.user)
-        return Response({'user': serializer.data, 'message': 'Details successful'}, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data, 'message': 'Details successful'}, status=status.HTTP_200_OK)
 
 
 class SecretKeyView(APIView):
@@ -159,7 +159,7 @@ class SecretKeyView(APIView):
         """ Get all the secretkey """
         secret_keys = SecretKey.objects.all()
         serializer = SecretKeySerializer(secret_keys, many=True)
-        return Response({'secret_keys': serializer.data}, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
         self.check_permissions(request)
@@ -168,7 +168,9 @@ class SecretKeyView(APIView):
         if serializer.is_valid(raise_exception=True):
             key = serializer.create(data)
             if key:
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                secret_key = SecretKey.objects.order_by('-id').first()
+                serializer = SecretKeySerializer(secret_key)
+                return Response({'data': serializer.data, 'message': 'Secret Key created successfully'}, status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -188,7 +190,7 @@ class CourseView(APIView):
         """ Get all the courses """
         courses = Course.objects.all()
         serializer = CourseSerializer(courses, many=True)
-        return Response({'courses': serializer.data}, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data, 'message': 'Course retrieved successfully'}, status=status.HTTP_200_OK)
 
     def post(self, request):
         """ Add new course """
@@ -196,7 +198,7 @@ class CourseView(APIView):
         serializer = CourseSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             serializer.create(data)
-            return Response({'courses': serializer.data}, status=status.HTTP_200_OK)
+            return Response({'data': serializer.data, 'message': "Course created successfully"}, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -209,7 +211,7 @@ class SubjectView(APIView):
         """ Get all the subjects """
         subjects = Subject.objects.all()
         serializer = SubjectSerializer(subjects, many=True)
-        return Response({'subjects': serializer.data}, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data, 'message': 'Subject retrieved successfully'}, status=status.HTTP_200_OK)
 
     def post(self, request):
         """ Add new subject """
@@ -218,7 +220,7 @@ class SubjectView(APIView):
         print(data)
         if serializer.is_valid(raise_exception=True):
             serializer.create(data)
-            return Response({'subjects': serializer.data}, status=status.HTTP_200_OK)
+            return Response({'data': serializer.data, 'message': 'Subject created successfully'}, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -232,6 +234,13 @@ class DashboardAnalysis(APIView):
         courses = Course.objects.all()
         cohorts = Cohort.objects.all()
         # current_user = UserSerializer(request.user).data
+        school = School.objects.get(school_id=1)
+        subjects = Subject.objects.all()
+
+        course_data = CourseSerializer(
+            courses, many=True).data if courses.exists() else []
+        subject_data = SubjectSerializer(
+            subjects, many=True).data if subjects.exists() else []
 
         cohorts_with_student_count = Cohort.objects.annotate(
             student_count=Count('students')
@@ -252,8 +261,11 @@ class DashboardAnalysis(APIView):
             'total_courses': courses.count(),
             'total_cohorts': cohorts.count(),
             'cohorts_student_count': cohorts_student_count,
+            'school_data': SchoolSerializer(school).data,
+            'course_data': course_data,
+            'subject_data': subject_data
             # 'current_user': current_user
         })
         serializer.is_valid(raise_exception=True)
 
-        return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data, 'message': 'Successfully retrieved the Analysis'}, status=status.HTTP_200_OK)

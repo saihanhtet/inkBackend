@@ -12,6 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 class School(models.Model):
     school_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
+    short_name = models.CharField(max_length=20, default='')
     location = models.CharField(max_length=255)
     objects = models.Manager()
 
@@ -295,6 +296,85 @@ def generate_permission() -> tuple:
     student_group.permissions.set(student_permissions)
 
     return (all_permissions, teacher_permissions, student_permissions)
+
+
+class Attendance(models.Model):
+    id = models.AutoField(primary_key=True)
+    subject_id = models.ForeignKey(Subject, on_delete=models.DO_NOTHING)
+    attendance_date = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
+
+
+class AttendanceReport(models.Model):
+    id = models.AutoField(primary_key=True)
+    student_id = models.ForeignKey(StudentProfile, on_delete=models.DO_NOTHING)
+    attendance_id = models.ForeignKey(Attendance, on_delete=models.CASCADE)
+    status = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
+
+
+class LeaveReportStudent(models.Model):
+    id = models.AutoField(primary_key=True)
+    student_id = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    leave_date = models.CharField(max_length=255)
+    leave_message = models.TextField()
+    leave_status = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
+
+
+class LeaveReportTeacher(models.Model):
+    id = models.AutoField(primary_key=True)
+    teacher_id = models.ForeignKey(TeacherProfile, on_delete=models.CASCADE)
+    leave_date = models.CharField(max_length=255)
+    leave_message = models.TextField()
+    leave_status = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
+
+
+class FeedBackStudent(models.Model):
+    id = models.AutoField(primary_key=True)
+    student_id = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    feedback = models.TextField()
+    feedback_reply = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
+
+
+class FeedBackTeacher(models.Model):
+    id = models.AutoField(primary_key=True)
+    teacher_id = models.ForeignKey(TeacherProfile, on_delete=models.CASCADE)
+    feedback = models.TextField()
+    feedback_reply = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
+
+
+class NotificationStudent(models.Model):
+    id = models.AutoField(primary_key=True)
+    student_id = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
+
+
+class NotificationTeacher(models.Model):
+    id = models.AutoField(primary_key=True)
+    teacher_id = models.ForeignKey(TeacherProfile, on_delete=models.CASCADE)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
 
 
 @receiver(post_save, sender=CustomUser)

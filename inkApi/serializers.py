@@ -1,15 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 
-from .models import Course, SecretKey, AdminProfile, Subject, TeacherProfile, StudentProfile
+from .models import Course, School, SecretKey, AdminProfile, Subject, TeacherProfile, StudentProfile
 
 User = get_user_model()
-
-
-class TeacherRegisterSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'password']
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -103,6 +97,9 @@ class SecretKeySerializer(serializers.ModelSerializer):
         model = SecretKey
         fields = ('__all__')
 
+    def create(self, validated_data):
+        return super().create(validated_data)
+
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -147,6 +144,7 @@ class CohortSerializer(serializers.Serializer):
     course_name = serializers.CharField()
     student_count = serializers.IntegerField()
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -158,18 +156,27 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
 
+
+class SchoolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = School
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        all_schools = School.objects.all().count()
+        if all_schools <= 1:
+            return super().create(validated_data)
+        else:
+            raise "Can't added another school"
+
+
 class DashboardAnalysisSerializer(serializers.Serializer):
     total_students = serializers.IntegerField()
     total_users = serializers.IntegerField()
     total_courses = serializers.IntegerField()
     total_cohorts = serializers.IntegerField()
     cohorts_student_count = CohortSerializer(many=True)
+    school_data = SchoolSerializer(many=False)
+    course_data = CourseSerializer(many=True)
+    subject_data = SubjectSerializer(many=True)
     # current_user = UserSerializer()
-
-    def create(self, validated_data):
-        # This method is not needed for a serializer without a model
-        pass
-
-    def update(self, instance, validated_data):
-        # This method is not needed for a serializer without a model
-        pass
