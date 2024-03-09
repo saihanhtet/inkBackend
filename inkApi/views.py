@@ -10,6 +10,11 @@ from .models import Cohort, School, SecretKey, Course, StudentProfile, Subject
 from rest_framework_simplejwt.authentication import JWTAuthentication as BaseJWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
+import os
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
+
 UserModel = get_user_model()
 
 
@@ -106,21 +111,23 @@ class UserLogin(APIView):
             response.set_cookie(
                 key='refresh_token',
                 value=tokens['refresh'],
-                httponly=False,
-                secure=True,  # Adjust based on your HTTPS setup
-                samesite='None',  # Adjust based on your cross-origin requirements
+                httponly=os.getenv('HTTPONLY'),
+                secure=True,
+                samesite='None',
                 # Adjust based on your domain or use IP address
-                domain='.ink-backend.vercel.app',  # .ink-backend.vercel.app | 127.0.0.1
+                # .ink-backend.vercel.app | 127.0.0.1
+                domain=os.get_env('DOMAIN'),
                 path='/',
             )
             response.set_cookie(
                 key='access_token',
                 value=tokens['access'],
-                httponly=False,
-                secure=True,  # Adjust based on your HTTPS setup
-                samesite='None',  # Adjust based on your cross-origin requirements
+                httponly=os.getenv('HTTPONLY'),
+                secure=True,
+                samesite='None',
                 # Adjust based on your domain or use IP address
-                domain='.ink-backend.vercel.app',  # .ink-backend.vercel.app | 127.0.0.1
+                # .ink-backend.vercel.app | 127.0.0.1
+                domain=os.get_env('DOMAIN'),
                 path='/',
             )
             return response
