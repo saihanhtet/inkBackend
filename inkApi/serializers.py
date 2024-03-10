@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 
-from .models import Attendance, AttendanceReport, Course, FeedBackStudent, FeedBackTeacher, LeaveReportStudent, LeaveReportTeacher, NotificationStudent, NotificationTeacher, School, SecretKey, AdminProfile, Subject, TeacherProfile, StudentProfile
+from inkApi.models import Attendance, AttendanceReport, Course, FeedBackStudent, FeedBackTeacher, LeaveReportStudent, LeaveReportTeacher, NotificationStudent, NotificationTeacher, School, SecretKey, AdminProfile, Subject, TeacherProfile, StudentProfile
 
 User = get_user_model()
 
@@ -97,12 +97,22 @@ class SecretKeySerializer(serializers.ModelSerializer):
         fields = ('__all__')
 
     def create(self, validated_data):
+        school_instance = self.get_first_school()
+        validated_data['school'] = school_instance
+        return super().create(validated_data)
+
+    def get_first_school(self):
+        """ Get the first school from database """
+        school = School.objects.first()
+        return school
+
+    def get_school_from_user(self):
+        """ Get the school from current request user """
         user = self.context['request'].user
         user_data = UserDetailSerializer(user)
         school_id = user_data.data['admin_profile']['school']
         school_instance = School.objects.get(school_id=school_id)
-        validated_data['school'] = school_instance
-        return super().create(validated_data)
+        return school_instance
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -168,10 +178,11 @@ class SchoolSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         all_schools = School.objects.all().count()
-        if all_schools <= 1:
+        if all_schools < 1:
             return super().create(validated_data)
         else:
-            raise "Can't added another school"
+            raise serializers.ValidationError(
+                "Can't add another school. Only one school is allowed.")
 
 
 class DashboardAnalysisSerializer(serializers.Serializer):

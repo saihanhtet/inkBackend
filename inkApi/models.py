@@ -1,12 +1,12 @@
-from django.core.exceptions import PermissionDenied
-from django.db.models.signals import post_migrate
-from django.dispatch import receiver
-from django.db.models.signals import post_save
 import secrets
 from django.db import models
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+from django.core.exceptions import PermissionDenied
 from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.models import AbstractUser, PermissionsMixin, Permission, Group
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import AbstractUser, PermissionsMixin, Permission, Group
+
 # Create your models here.
 
 
@@ -20,13 +20,7 @@ class School(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        # Check if there are any existing instances
-        existing_count = School.objects.count()
-        if existing_count == 0:
-            super().save(*args, **kwargs)
-        else:
-            # Prevent saving if an instance already exists
-            raise ValueError("Only one instance of School can be created.")
+        super().save(*args, **kwargs)
 
 
 class Course(models.Model):

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import *
+from inkApi.models import *
 
 admin.site.register(CustomUser)
 admin.site.register(Course)

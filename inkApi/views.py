@@ -3,10 +3,10 @@ from django.db.models import Count
 from django.contrib.auth import get_user_model, login, logout
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import AttendanceSerializer, CourseSerializer, DashboardAnalysisSerializer, SchoolSerializer, SecretKeySerializer, SubjectSerializer, UserRegisterSerializer, UserLoginSerializer, UserDetailSerializer, UserSerializer
+from inkApi.serializers import AttendanceSerializer, CourseSerializer, DashboardAnalysisSerializer, SchoolSerializer, SecretKeySerializer, SubjectSerializer, UserRegisterSerializer, UserLoginSerializer, UserDetailSerializer
 from rest_framework import permissions, status
-from .validations import custom_validation, validate_email, validate_password
-from .models import Attendance, Cohort, School, SecretKey, Course, StudentProfile, Subject
+from inkApi.validations import custom_validation, validate_email, validate_password
+from inkApi.models import Attendance, Cohort, School, SecretKey, Course, StudentProfile, Subject
 from rest_framework_simplejwt.authentication import JWTAuthentication as BaseJWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -76,18 +76,49 @@ class IsSuperuser(permissions.BasePermission):
 
 class IsTeacher(permissions.BasePermission):
     def has_permission(self, request, view):
+        """ Check if the user making the request is a staff member"""
         return request.user and request.user.is_staff
 
 
 def ResponseFunction(data, message, status):
+    """ Default reponse function layout """
     return Response({'data': data, 'message': str(message)}, status=status)
 
 
+def addCookies(response: Response, tokens):
+    """ 
+    Adding the cookies to our response header
+    """
+    # domain : .ink-backend.vercel.app | 127.0.0.1
+    response.set_cookie(
+        key='refresh_token',
+        value=tokens['refresh'],
+        httponly=os.getenv('HTTPONLY'),
+        secure=True,
+        samesite='None',
+        domain=os.getenv('DOMAIN'),
+        path='/',
+    )
+    response.set_cookie(
+        key='access_token',
+        value=tokens['access'],
+        httponly=os.getenv('HTTPONLY'),
+        secure=True,
+        samesite='None',
+        domain=os.getenv('DOMAIN'),
+        path='/',
+    )
+    return response
+
+
 class UserRegister(APIView):
+    """
+    View for user register.
+    """
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        """ User Register post method"""
+        """ User Register post method """
         clean_data = custom_validation(request.data)
         serializer = UserRegisterSerializer(data=clean_data)
         if serializer.is_valid(raise_exception=True):
@@ -105,7 +136,7 @@ class UserLogin(APIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        """ User Login post method"""
+        """ User Login post method """
         data = request.data
         assert validate_email(data)
         assert validate_password(data)
@@ -118,37 +149,19 @@ class UserLogin(APIView):
             response = ResponseFunction(
                 serializer.data, "Successfully Login", status.HTTP_200_OK)
 
-            response.set_cookie(
-                key='refresh_token',
-                value=tokens['refresh'],
-                httponly=os.getenv('HTTPONLY'),
-                secure=True,
-                samesite='None',
-                # Adjust based on your domain or use IP address
-                # .ink-backend.vercel.app | 127.0.0.1
-                domain=os.getenv('DOMAIN'),
-                path='/',
-            )
-            response.set_cookie(
-                key='access_token',
-                value=tokens['access'],
-                httponly=os.getenv('HTTPONLY'),
-                secure=True,
-                samesite='None',
-                # Adjust based on your domain or use IP address
-                # .ink-backend.vercel.app | 127.0.0.1
-                domain=os.getenv('DOMAIN'),
-                path='/',
-            )
+            response = addCookies(response, tokens)
             return response
 
 
 class UserLogout(APIView):
+    """
+    View for user logout.
+    """
     permission_classes = (permissions.AllowAny,)
     authentication_classes = ()
 
     def post(self, request):
-        """ User Logout method"""
+        """ User Logout method """
         logout(request)
         response = ResponseFunction(
             {}, "Successfully Logout", status.HTTP_200_OK)
@@ -157,18 +170,21 @@ class UserLogout(APIView):
         return response
 
 
-class UserView(APIView):
+class UserView(RetrieveUpdateDestroyAPIView):
     """
     View for getting user details.
     """
+    queryset = UserModel.objects.all()
+    serializer_class = UserDetailSerializer
     permission_classes = (permissions.IsAuthenticated,)
     authentication_classes = [JWTAuthentication]
 
-    def get(self, request):
-        """ User Detail get method """
-        print('User:', request.user)
-        serializer = UserDetailSerializer(request.user)
-        return ResponseFunction(serializer.data, "Successfully Got the Details", status.HTTP_200_OK)
+    def get(self, request, *args, **kwargs):
+        """ User Details get method """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        message = "Successfully retrieved user details."
+        return Response({"data": serializer.data, "message": message}, status=status.HTTP_200_OK)
 
 
 class UserAllView(APIView):
@@ -179,17 +195,21 @@ class UserAllView(APIView):
     authentication_classes = [JWTAuthentication]
 
     def get(self, request):
-        """ User Detail get method """
+        """ All User Details get method """
         users = UserModel.objects.all()
         serializer = UserDetailSerializer(users, many=True)
         return ResponseFunction(serializer.data, "Successfully Got the Users", status.HTTP_200_OK)
 
 
-class quote_generator(APIView):
+class QuoteGenerator(APIView):
+    """
+    View for quote generate.
+    """
     permission_classes = (permissions.AllowAny, )
     authentication_classes = ()
 
     def get(self, request):
+        """ Get the random qute from rapidapi method """
         import requests
         url = "https://quotes15.p.rapidapi.com/quotes/random/"
 
@@ -207,18 +227,22 @@ class quote_generator(APIView):
 
 
 class SecretKeyView(APIView):
+    """
+    View for secret key.
+    """
     permission_classes = (permissions.IsAuthenticated,
                           IsSuperuser,)
     authentication_classes = [JWTAuthentication]
 
     def get(self, request):
-        """ Get all the secretkey """
+        """ Get all the secret key """
         secret_keys = SecretKey.objects.all()
         serializer = SecretKeySerializer(secret_keys, many=True)
 
         return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
+        """ Create new secret key """
         data = request.data
         serializer = SecretKeySerializer(
             data=data, context={'request': request})
@@ -232,8 +256,31 @@ class SecretKeyView(APIView):
 
 
 class CourseDetailView(RetrieveUpdateDestroyAPIView):
+    """
+    View for course details view
+    """
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    permission_classes = (permissions.IsAuthenticated, IsSuperuser,)
+    authentication_classes = [JWTAuthentication]
+
+
+class SubjectDetailView(RetrieveUpdateDestroyAPIView):
+    """
+    View for course details view
+    """
+    queryset = Subject.objects.all()
+    serializer_class = SubjectSerializer
+    permission_classes = (permissions.IsAuthenticated, IsSuperuser,)
+    authentication_classes = [JWTAuthentication]
+
+
+class SchoolDetailView(RetrieveUpdateDestroyAPIView):
+    """
+    View for school details view
+    """
+    queryset = School.objects.all()
+    serializer_class = SchoolSerializer
     permission_classes = (permissions.IsAuthenticated, IsSuperuser,)
     authentication_classes = [JWTAuthentication]
 
@@ -306,6 +353,7 @@ class SchoolView(APIView):
         return ResponseFunction(serializer.data, "Successfully retrieved School", status.HTTP_200_OK)
 
     def post(self, request):
+        """ Create a school for the first time """
         data = request.data
         serializer = SchoolSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
