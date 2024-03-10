@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from django.db.models.signals import post_save
@@ -14,10 +15,18 @@ class School(models.Model):
     name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=20, default='')
     location = models.CharField(max_length=255)
-    objects = models.Manager()
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # Check if there are any existing instances
+        existing_count = School.objects.count()
+        if existing_count == 0:
+            super().save(*args, **kwargs)
+        else:
+            # Prevent saving if an instance already exists
+            raise ValueError("Only one instance of School can be created.")
 
 
 class Course(models.Model):
@@ -93,36 +102,6 @@ class Cohort(models.Model):
         return f"{self.cohort_name} - {self.course.course_name}"
 
 
-class SecretKey(models.Model):
-    TEACHER = 'teacher'
-    ADMIN = 'admin'
-
-    ROLE_CHOICES = [
-        (TEACHER, 'Teacher'),
-        (ADMIN, 'Admin'),
-    ]
-    id = models.AutoField(primary_key=True)
-    key = models.CharField(max_length=36, unique=True, null=True, blank=True)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
-    is_used = models.BooleanField(default=False)
-    objects = models.Manager()
-
-    def __str__(self):
-        return f"{self.key} - {self.role}"
-
-    def generate_random_key(self, length=15) -> str:
-        ''' return random generated secret key based on the length'''
-        characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$"
-        random_key = ''.join(secrets.choice(characters)
-                             for _ in range(length))
-        return random_key
-
-    def save(self, *args, **kwargs):
-        if not self.key:
-            self.key = self.generate_random_key()
-        super().save(*args, **kwargs)
-
-
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         """ Create and return a regular user with an email and password. """
@@ -155,7 +134,10 @@ class CustomUserManager(BaseUserManager):
             extra_fields.setdefault('user_type', CustomUser.ADMIN)
             extra_fields.setdefault('is_superuser', True)
 
+        # update the used state
         secret_key_obj.is_used = True
+        secret_key_obj.save()
+
         return self.create_user(email, password, **extra_fields)
 
     def create_superuser(self, email, password=None, **extra_fields):
@@ -192,6 +174,65 @@ class CustomUser(AbstractUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
+
+    def delete(self, using=None, keep_parents=False):
+        first_superuser_id = CustomUser.objects.filter(
+            is_superuser=True).order_by('id').first().id
+        if self.is_superuser and self.id == first_superuser_id:
+            raise PermissionDenied("The first superuser cannot be deleted.")
+        super().delete(using=using, keep_parents=keep_parents)
+
+
+class SecretKey(models.Model):
+    TEACHER = 'teacher'
+    ADMIN = 'admin'
+
+    ROLE_CHOICES = [
+        (TEACHER, 'Teacher'),
+        (ADMIN, 'Admin'),
+    ]
+    id = models.AutoField(primary_key=True)
+    key = models.CharField(max_length=36, unique=True, null=True, blank=True)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    school = models.ForeignKey(
+        School, on_delete=models.CASCADE, related_name='school', null=True, blank=True)
+    is_used = models.BooleanField(default=False)
+    objects = models.Manager()
+
+    def __str__(self):
+        return f"{self.key} - {self.role}"
+
+    def generate_random_key(self, length=8) -> str:
+        ''' return random generated secret key based on the length'''
+        characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$"
+        random_key = ''.join(secrets.choice(characters)
+                             for _ in range(length))
+        return random_key
+
+    def generate_quote(self):
+        import requests
+        url = "https://quotes15.p.rapidapi.com/quotes/random/"
+        headers = {
+            "X-RapidAPI-Key": "abbb6e23e4mshe4ff0b066943ce9p19cb71jsn5bcc19169aa1",
+            "X-RapidAPI-Host": "quotes15.p.rapidapi.com"
+        }
+        try:
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                quote = response.json()['content']
+                return str(quote)
+            else:
+                raise ValueError('Error at requesting quote')
+        except Exception as e:
+            print(e)
+            key = self.generate_random_key(length=18)
+            return str(key)
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_quote()
+
+        super().save(*args, **kwargs)
 
 
 class AdminProfile(models.Model):
@@ -245,6 +286,9 @@ class StudentProfile(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
+
+    school = models.ForeignKey(
+        School, on_delete=models.CASCADE, null=True, blank=True, related_name='student_profiles')
     objects = models.Manager()
 
     def __str__(self):
@@ -377,6 +421,11 @@ class NotificationTeacher(models.Model):
     objects = models.Manager()
 
 
+@receiver(post_save, sender=SecretKey)
+def save_secret_key(sender, instance, **kwargs):
+    print(instance, 'hi')
+
+
 @receiver(post_save, sender=CustomUser)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -400,3 +449,16 @@ def save_user_profile(sender, instance, **kwargs):
         instance.teacherprofile.save()
     if instance.user_type == CustomUser.STUDENT:
         instance.studentprofile.save()
+
+
+@receiver(post_save, sender=AdminProfile)
+@receiver(post_save, sender=TeacherProfile)
+@receiver(post_save, sender=StudentProfile)
+def insert_first_school(sender, instance, created, **kwargs):
+    if created and not instance.school:
+        try:
+            last_school = School.objects.last()
+            instance.school = last_school
+            instance.save()
+        except School.DoesNotExist:
+            pass

@@ -13,13 +13,12 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     def create(self, clean_data):
         secret_key = clean_data['secret_key']
-
         if secret_key:
             user_obj = User.objects.create_staff(
                 email=clean_data['email'],
                 password=clean_data['password'],
                 username=clean_data['username'],
-                secret_key=secret_key
+                secret_key=secret_key,
             )
             user_obj.save()
             return user_obj
@@ -78,7 +77,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         user_type = instance.user_type
-
+        data.pop('password')
         if user_type == User.ADMIN:
             data.pop('teacher_profile')
             data.pop('student_profile')
@@ -98,6 +97,11 @@ class SecretKeySerializer(serializers.ModelSerializer):
         fields = ('__all__')
 
     def create(self, validated_data):
+        user = self.context['request'].user
+        user_data = UserDetailSerializer(user)
+        school_id = user_data.data['admin_profile']['school']
+        school_instance = School.objects.get(school_id=school_id)
+        validated_data['school'] = school_instance
         return super().create(validated_data)
 
 
@@ -176,7 +180,7 @@ class DashboardAnalysisSerializer(serializers.Serializer):
     total_courses = serializers.IntegerField()
     total_cohorts = serializers.IntegerField()
     cohorts_student_count = CohortSerializer(many=True)
-    school_data = SchoolSerializer(many=False)
+    school_data = SchoolSerializer(allow_null=True, many=True)
     course_data = CourseSerializer(many=True)
     subject_data = SubjectSerializer(many=True)
     # current_user = UserSerializer()
