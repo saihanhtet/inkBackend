@@ -230,9 +230,25 @@ class SecretKey(models.Model):
 
 
 class AdminProfile(models.Model):
+    MALE = 'male'
+    FEMALE = 'female'
+    OTHER = 'other'
+    SEX_TYPES = [
+        (MALE, 'Male'),
+        (FEMALE, 'Female'),
+        (OTHER, 'Other')
+    ]
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     school = models.ForeignKey(
         School, on_delete=models.CASCADE, null=True, blank=True, related_name='admin_profiles')
+
+    sex = models.CharField(max_length=10, choices=SEX_TYPES, default=OTHER)
+    phone_number = models.CharField(max_length=30, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    profile_pic = models.ImageField(
+        upload_to='profile_pics/', null=True, blank=True)
+    address = models.TextField(blank=True)
+
     objects = models.Manager()
 
     def __str__(self):
@@ -240,9 +256,25 @@ class AdminProfile(models.Model):
 
 
 class TeacherProfile(models.Model):
+    MALE = 'male'
+    FEMALE = 'female'
+    OTHER = 'other'
+    SEX_TYPES = [
+        (MALE, 'Male'),
+        (FEMALE, 'Female'),
+        (OTHER, 'Other')
+    ]
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     school = models.ForeignKey(
         School, on_delete=models.CASCADE, related_name='teacher_profiles', null=True, blank=True)
+
+    sex = models.CharField(max_length=10, choices=SEX_TYPES, default=OTHER)
+    phone_number = models.CharField(max_length=30, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    profile_pic = models.ImageField(
+        upload_to='profile_pics/', null=True, blank=True)
+    address = models.TextField(blank=True)
+
     objects = models.Manager()
 
     def __str__(self):

@@ -79,14 +79,26 @@ class UserDetailSerializer(serializers.ModelSerializer):
         user_type = instance.user_type
         data.pop('password')
         if user_type == User.ADMIN:
+            admin_profile_data = data.get('admin_profile', {})
+            admin_profile_data.pop('user', None)
+            data['profile'] = admin_profile_data
+            data.pop('admin_profile')
             data.pop('teacher_profile')
             data.pop('student_profile')
         elif user_type == User.TEACHER:
-            data.pop('admin_profile')
-            data.pop('student_profile')
-        elif user_type == User.STUDENT:
+            teacher_profile_data = data.get('teacher_profile', {})
+            teacher_profile_data.pop('user', None)
+            data['profile'] = teacher_profile_data
             data.pop('admin_profile')
             data.pop('teacher_profile')
+            data.pop('student_profile')
+        elif user_type == User.STUDENT:
+            student_profile_data = data.get('student_profile', {})
+            student_profile_data.pop('user', None)
+            data['profile'] = student_profile_data
+            data.pop('admin_profile')
+            data.pop('teacher_profile')
+            data.pop('student_profile')
 
         return data
 
@@ -133,12 +145,24 @@ class CourseSerializer(serializers.ModelSerializer):
         return instance
 
 
+class CourseWithStudentSerializer(serializers.Serializer):
+    course = CourseSerializer(many=False, allow_null=True)
+    students = serializers.JSONField()
+    count = serializers.IntegerField()
+
+
+class StudentProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentProfile
+        fields = ('__all__')
+
+
 class SubjectSerializer(serializers.ModelSerializer):
-    course_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Subject
-        fields = ('id', 'subject_name', 'book_name', 'price', 'course_name')
+        fields = ('id', 'subject_name', 'book_name',
+                  'price', 'course')
 
     def create(self, validated_data):
         subject_name = validated_data['subject_name']
@@ -148,9 +172,6 @@ class SubjectSerializer(serializers.ModelSerializer):
         subject = Subject.objects.create(
             subject_name=subject_name, book_name=book_name, price=price, course=course)
         return subject
-
-    def get_course_name(self, obj):
-        return obj.get_course_name()
 
 
 class CohortSerializer(serializers.Serializer):
@@ -190,10 +211,12 @@ class DashboardAnalysisSerializer(serializers.Serializer):
     total_users = serializers.IntegerField()
     total_courses = serializers.IntegerField()
     total_cohorts = serializers.IntegerField()
-    cohorts_student_count = CohortSerializer(many=True)
-    school_data = SchoolSerializer(allow_null=True, many=True)
-    course_data = CourseSerializer(many=True)
-    subject_data = SubjectSerializer(many=True)
+    cohorts_student_count = CohortSerializer(many=True, allow_null=True)
+    school_data = SchoolSerializer(many=False, allow_null=True)
+    course_data = CourseSerializer(many=True, allow_null=True)
+    subject_data = SubjectSerializer(many=True, allow_null=True)
+    course_student_pairs = CourseWithStudentSerializer(
+        many=True, allow_null=True)
     # current_user = UserSerializer()
 
 
