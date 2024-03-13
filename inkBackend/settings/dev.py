@@ -43,13 +43,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'storages',
     'inkApi'
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    # "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -160,14 +161,13 @@ USE_TZ = True
 #     },
 # }
 
+
+STATIC_ROOT = os.path.join(BASE_DIR.parent, 'staticfiles')
 STATIC_URL = '/static/'
 
-# Use a list for STATICFILES_DIRS
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR.parent, 'static'),
 ]
-# Specify the location for collected static files
-STATIC_ROOT = os.path.join(BASE_DIR.parent, 'staticfiles')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR.parent, 'media')
