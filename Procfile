@@ -1,1 +1,1 @@
-web: python manage.py migrate && gunicorn <project_name>.wsgi
+web: python manage.py migrate && gunicorn 'inkBackend.wsgi'
