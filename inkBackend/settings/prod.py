@@ -24,11 +24,19 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
+# CORS_ALLOWED_ORIGINS = [
+# 'https://inkbackend-production.up.railway.app',
+# 'https://lightecfa.up.railway.app',
+# ]
+
+# CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://0.0.0.0:5173',
     'https://inkbackend-production.up.railway.app',
     'https://lightecfa.up.railway.app',
 ]
-
 CORS_ALLOW_CREDENTIALS = True
 
 

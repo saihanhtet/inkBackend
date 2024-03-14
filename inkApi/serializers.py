@@ -151,6 +151,11 @@ class CohortSerializer(serializers.ModelSerializer):
         fields = ('id', 'cohort_name',
                   'session_start_date', 'session_end_date', 'course')
 
+    def create(self, validated_data):
+        course = Course.objects.get(pk=validated_data['course'])
+        validated_data['course'] = course
+        return super().create(validated_data)
+
 
 class CourseWithStudentSerializer(serializers.Serializer):
     course = CourseSerializer(many=False, allow_null=True)
