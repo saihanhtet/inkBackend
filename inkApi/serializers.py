@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 
-from inkApi.models import Attendance, AttendanceReport, Course, FeedBackStudent, FeedBackTeacher, LeaveReportStudent, LeaveReportTeacher, NotificationStudent, NotificationTeacher, School, SecretKey, AdminProfile, Subject, TeacherProfile, StudentProfile
+from inkApi.models import Attendance, AttendanceReport, Cohort, Course, FeedBackStudent, FeedBackTeacher, LeaveReportStudent, LeaveReportTeacher, NotificationStudent, NotificationTeacher, School, SecretKey, AdminProfile, Subject, TeacherProfile, StudentProfile
 
 User = get_user_model()
 
@@ -145,6 +145,13 @@ class CourseSerializer(serializers.ModelSerializer):
         return instance
 
 
+class CohortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cohort
+        fields = ('id', 'cohort_name',
+                  'session_start_date', 'session_end_date', 'course')
+
+
 class CourseWithStudentSerializer(serializers.Serializer):
     course = CourseSerializer(many=False, allow_null=True)
     students = serializers.JSONField()
@@ -174,7 +181,7 @@ class SubjectSerializer(serializers.ModelSerializer):
         return subject
 
 
-class CohortSerializer(serializers.Serializer):
+class CohortWithStudentSerializer(serializers.Serializer):
     cohort_name = serializers.CharField()
     course_name = serializers.CharField()
     student_count = serializers.IntegerField()
@@ -211,10 +218,12 @@ class DashboardAnalysisSerializer(serializers.Serializer):
     total_users = serializers.IntegerField()
     total_courses = serializers.IntegerField()
     total_cohorts = serializers.IntegerField()
-    cohorts_student_count = CohortSerializer(many=True, allow_null=True)
+    cohorts_student_count = CohortWithStudentSerializer(
+        many=True, allow_null=True)
+    cohort_data = serializers.ListField(child=serializers.DictField())
     school_data = SchoolSerializer(many=False, allow_null=True)
-    course_data = CourseSerializer(many=True, allow_null=True)
-    subject_data = SubjectSerializer(many=True, allow_null=True)
+    course_data = serializers.ListField(child=serializers.DictField())
+    subject_data = serializers.ListField(child=serializers.DictField())
     course_student_pairs = CourseWithStudentSerializer(
         many=True, allow_null=True)
     # current_user = UserSerializer()

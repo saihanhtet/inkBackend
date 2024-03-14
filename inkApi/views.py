@@ -4,7 +4,7 @@ from django.db.models import Count
 from django.contrib.auth import get_user_model, login, logout
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from inkApi.serializers import AttendanceSerializer, CourseSerializer, CourseWithStudentSerializer, DashboardAnalysisSerializer, SchoolSerializer, SecretKeySerializer, StudentProfileSerializer, SubjectSerializer, UserRegisterSerializer, UserLoginSerializer, UserDetailSerializer
+from inkApi.serializers import AttendanceSerializer, CohortSerializer, CourseSerializer, CourseWithStudentSerializer, DashboardAnalysisSerializer, SchoolSerializer, SecretKeySerializer, StudentProfileSerializer, SubjectSerializer, UserRegisterSerializer, UserLoginSerializer, UserDetailSerializer
 from rest_framework import permissions, status
 from inkApi.validations import custom_validation, validate_email, validate_password
 from inkApi.models import Attendance, Cohort, School, SecretKey, Course, StudentProfile, Subject
@@ -319,6 +319,27 @@ class CourseView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+class CohortView(APIView):
+    permission_classes = (permissions.IsAuthenticated,
+                          IsSuperuser,)
+    authentication_classes = [JWTAuthentication]
+
+    def get(self, request):
+        """ Get all the courses """
+        cohort = Cohort.objects.all()
+        serializer = CohortSerializer(cohort, many=True)
+        return ResponseFunction(serializer.data, "Successfully retrieved Cohort", status.HTTP_200_OK)
+
+    def post(self, request):
+        """ Add new course """
+        data = request.data
+        serializer = CohortSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.create(data)
+            return ResponseFunction(serializer.data, "Successfully created Cohort", status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
 class SubjectView(APIView):
     permission_classes = (permissions.IsAuthenticated,
                           IsSuperuser,)
@@ -337,6 +358,27 @@ class SubjectView(APIView):
         if serializer.is_valid(raise_exception=True):
             serializer.create(data)
             return ResponseFunction(serializer.data, "Successfully created Subject", status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class StudentView(APIView):
+    permission_classes = (permissions.IsAuthenticated,
+                          IsSuperuser,)
+    authentication_classes = [JWTAuthentication]
+
+    def get(self, request):
+        """ Get all the subjects """
+        users = UserModel.objects.filter(user_type='student')
+        serializer = UserDetailSerializer(users, many=True)
+        return ResponseFunction(serializer.data, "Successfully retrieved Students", status.HTTP_200_OK)
+
+    def post(self, request):
+        """ Add new subject """
+        data = request.data
+        serializer = StudentProfileSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.create(data)
+            return ResponseFunction(serializer.data, "Successfully created Student", status.HTTP_201_CREATED)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -389,32 +431,31 @@ class DashboardAnalysis(APIView):
 
         # Initialize data variables
         course_data = []
-        subject_data = []
-        cohorts_student_count = []
 
+        subject_data = [SubjectSerializer(
+            subj).data for subj in subjects] if subjects.exists() else []
+
+        cohort_data = [CohortSerializer(
+            cohort).data for cohort in cohorts] if cohorts.exists() else []
+
+        cohorts_student_count = []
         course_student_pairs = []
 
         for course in courses:
             try:
                 students_obj = StudentProfile.objects.filter(
                     cohort__course=course)
-                course_data = CourseSerializer(course).data
+                # Append serialized course data
+                course_data.append(CourseSerializer(course).data)
                 students_data = StudentProfileSerializer(
                     students_obj, many=True).data
                 course_student_pairs.append({
-                    'course': course_data,
+                    'course': CourseSerializer(course).data,
                     'students': students_data,
                     'count': students.count()
                 })
             except ObjectDoesNotExist:
                 print("Students not found for course:", course)
-        print(course_student_pairs)
-        # Check if there are any courses, subjects, or cohorts
-        if courses.exists():
-            course_data = CourseSerializer(courses, many=True).data
-
-        if subjects.exists():
-            subject_data = SubjectSerializer(subjects, many=True).data
 
         if school.exists():
             school_data = SchoolSerializer(school.first(), many=False).data
@@ -440,6 +481,7 @@ class DashboardAnalysis(APIView):
             'total_courses': courses.count(),
             'total_cohorts': cohorts.count(),
             'cohorts_student_count': cohorts_student_count,
+            'cohort_data': cohort_data,
             'school_data': school_data,
             'course_data': course_data,
             'subject_data': subject_data,

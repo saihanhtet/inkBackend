@@ -18,9 +18,19 @@ urlpatterns = [
 
     # dashboard
     path('analysis', views.DashboardAnalysis.as_view(), name='analysis'),
+
+    # course
     path('course', views.CourseView.as_view(), name='course'),
     path('course/<int:pk>', views.CourseDetailView.as_view(), name='course_detail'),
+
+    # subject
     path('subject', views.SubjectView.as_view(), name='subject'),
     path('subject/<int:pk>', views.SubjectDetailView.as_view(),
          name='subject_detail'),
+
+    # student
+    path('student', views.StudentView.as_view(), name='student'),
+
+    # cohort
+    path('cohort', views.CohortView.as_view(), name='cohort'),
 ]
