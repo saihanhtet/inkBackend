@@ -130,7 +130,7 @@ class SecretKeySerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ('id', 'course_name')
+        fields = ('__all__')
 
     def create(self, clean_data):
         course = Course.objects.create(
@@ -189,6 +189,7 @@ class SubjectSerializer(serializers.ModelSerializer):
 class CohortWithStudentSerializer(serializers.Serializer):
     cohort_name = serializers.CharField()
     course_name = serializers.CharField()
+    students = serializers.JSONField()
     student_count = serializers.IntegerField()
 
 
@@ -223,14 +224,22 @@ class DashboardAnalysisSerializer(serializers.Serializer):
     total_users = serializers.IntegerField()
     total_courses = serializers.IntegerField()
     total_cohorts = serializers.IntegerField()
-    cohorts_student_count = CohortWithStudentSerializer(
-        many=True, allow_null=True)
+
+    school_data = serializers.DictField()
     cohort_data = serializers.ListField(child=serializers.DictField())
-    school_data = SchoolSerializer(many=False, allow_null=True)
     course_data = serializers.ListField(child=serializers.DictField())
     subject_data = serializers.ListField(child=serializers.DictField())
+    secretkey_data = serializers.ListField(child=serializers.DictField())
+
+    admin_data = serializers.ListField(child=serializers.DictField())
+    teacher_data = serializers.ListField(child=serializers.DictField())
+    student_data = serializers.ListField(child=serializers.DictField())
+
+    cohorts_student_pairs = CohortWithStudentSerializer(
+        many=True, allow_null=True)
     course_student_pairs = CourseWithStudentSerializer(
         many=True, allow_null=True)
+
     # current_user = UserSerializer()
 
 

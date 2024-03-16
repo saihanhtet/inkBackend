@@ -81,16 +81,15 @@ class IsTeacher(permissions.BasePermission):
         return request.user and request.user.is_staff
 
 
-def ResponseFunction(data, message, status):
+def ResponseFunction(data, message, status, **args):
     """ Default reponse function layout """
-    return Response({'data': data, 'message': str(message)}, status=status)
+    return Response({'data': data, **args, 'message': str(message)}, status=status)
 
 
 def addCookies(response: Response, tokens):
     """ 
     Adding the cookies to our response header
     """
-    # domain : .ink-backend.vercel.app | 127.0.0.1
     response.set_cookie(
         key='refresh_token',
         value=tokens['refresh'],
@@ -148,7 +147,7 @@ class UserLogin(APIView):
             tokens = generate_tokens(user)
             serializer = UserDetailSerializer(user)
             response = ResponseFunction(
-                serializer.data, "Successfully Login", status.HTTP_200_OK)
+                data=serializer.data, message="Successfully Login", status=status.HTTP_200_OK, **tokens)
 
             response = addCookies(response, tokens)
             return response
@@ -422,43 +421,54 @@ class DashboardAnalysis(APIView):
     authentication_classes = [JWTAuthentication]
 
     def get(self, request):
-        students = StudentProfile.objects.all()
+        """ Get all informations"""
         users = UserModel.objects.all()
-        courses = Course.objects.all()
-        cohorts = Cohort.objects.all()
+        students = StudentProfile.objects.all()
+        secretkeys = SecretKey.objects.all()
+
+        admin = UserModel.objects.filter(user_type='admin')
+        teacher = UserModel.objects.filter(user_type='teacher')
+        student = UserModel.objects.filter(user_type='student')
+
         school = School.objects.all()
         subjects = Subject.objects.all()
+        courses = Course.objects.all()
+        cohorts = Cohort.objects.all()
 
-        # Initialize data variables
-        course_data = []
-
+        course_data = [CourseSerializer(
+            course).data for course in courses] if courses.exists() else []
         subject_data = [SubjectSerializer(
             subj).data for subj in subjects] if subjects.exists() else []
-
         cohort_data = [CohortSerializer(
             cohort).data for cohort in cohorts] if cohorts.exists() else []
+        school_data = SchoolSerializer(
+            school.first(), many=False).data if school.exists() else {}
+        secretkey_data = [SecretKeySerializer(
+            secretkey).data for secretkey in secretkeys] if secretkeys.exists() else []
+
+        admin_data = [UserDetailSerializer(
+            user).data for user in admin] if admin.exists() else []
+        teacher_data = [UserDetailSerializer(
+            user).data for user in teacher] if teacher.exists() else []
+        student_data = [UserDetailSerializer(
+            user).data for user in student] if student.exists() else []
 
         cohorts_student_count = []
         course_student_pairs = []
 
         for course in courses:
+            students_obj = StudentProfile.objects.filter(cohort__course=course)
             try:
-                students_obj = StudentProfile.objects.filter(
-                    cohort__course=course)
-                # Append serialized course data
-                course_data.append(CourseSerializer(course).data)
+                student_count = students_obj.count()
                 students_data = StudentProfileSerializer(
                     students_obj, many=True).data
                 course_student_pairs.append({
                     'course': CourseSerializer(course).data,
                     'students': students_data,
-                    'count': students.count()
+                    'count': student_count
                 })
             except ObjectDoesNotExist:
                 print("Students not found for course:", course)
-
-        if school.exists():
-            school_data = SchoolSerializer(school.first(), many=False).data
 
         if cohorts.exists():
             cohorts_with_student_count = Cohort.objects.annotate(
@@ -469,25 +479,30 @@ class DashboardAnalysis(APIView):
                 {
                     'cohort_name': cohort.cohort_name,
                     'course_name': cohort.course.course_name if cohort.course else "",
-                    'student_count': cohort.student_count
+                    'student_count': cohort.student_count,
+                    'students': StudentProfileSerializer(StudentProfile.objects.filter(cohort=cohort.id), many=True).data
                 }
                 for cohort in cohorts_with_student_count
             ]
 
-        # Serialize data
         serializer = DashboardAnalysisSerializer(data={
             'total_students': students.count(),
             'total_users': users.count(),
             'total_courses': courses.count(),
             'total_cohorts': cohorts.count(),
-            'cohorts_student_count': cohorts_student_count,
-            'cohort_data': cohort_data,
+
             'school_data': school_data,
             'course_data': course_data,
             'subject_data': subject_data,
+            'cohort_data': cohort_data,
+            'secretkey_data': secretkey_data,
+            'admin_data': admin_data,
+            'teacher_data': teacher_data,
+            'student_data': student_data,
+
+            'cohorts_student_pairs': cohorts_student_count,
             'course_student_pairs': course_student_pairs
         }, allow_null=True)
 
-        # Validate serializer and return response
         serializer.is_valid(raise_exception=True)
         return ResponseFunction(serializer.data, "Successfully retrieved Analysis data", status.HTTP_200_OK)
