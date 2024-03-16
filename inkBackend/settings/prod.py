@@ -30,6 +30,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://0.0.0.0:5173',
     'https://inkbackend-production.up.railway.app',
     'https://lightecfa.up.railway.app',
+    'https://lightecfa.vercel.app',
 ]
 CORS_ALLOW_CREDENTIALS = True
 
